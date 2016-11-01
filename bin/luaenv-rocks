@@ -1,0 +1,187 @@
+#!/bin/sh
+# Install luarocks for luaenv.
+
+if [ -z "$LUAENV_ROOT" ]; then
+  LUAENV_ROOT="${HOME}/.luaenv"
+fi
+
+if [ -z "${TARBALL_CACHE_PATH}" ] && [ -d "${LUAENV_ROOT}/cache" ]; then
+  export TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache"
+fi
+
+if type gpg &>/dev/null; then
+  HAS_GPG_SUPPORT=1
+else
+  unset HAS_GPG_SUPPORT
+fi
+
+
+http() {
+  local method="$1"
+  local url="$2"
+  [ -n "$url" ] || return 1
+
+  if type curl &>/dev/null; then
+    "http_${method}_curl" "$url"
+  elif type wget &>/dev/null; then
+    "http_${method}_wget" "$url"
+  else
+    echo "error: please install \`curl\` or \`wget\` and try again" >&2
+    exit 1
+  fi
+}
+
+
+http_head_curl() {
+  curl -qsILf "$1" >&4 2>&1
+}
+
+http_get_curl() {
+  curl -qsSLf "$1"
+}
+
+http_head_wget() {
+  wget -q --spider "$1" >&4 2>&1
+}
+
+http_get_wget() {
+  wget -nv -O- "$1"
+}
+
+
+fetch_tarball() {
+  local package_name="$1"
+  local package_url="$2"
+  local signature_url="$1.asc"
+
+  local package_filename="${package_name}.tar.gz"
+  local signature_filename="${package_name}.tar.gz.asc"
+
+  symlink_tarball_from_cache "$package_filename" "$checksum" || {
+    echo "Downloading ${package_filename}..." >&2
+    { http head "$mirror_url" &&
+      download_tarball "$mirror_url" "$package_filename" "$checksum"
+    } ||
+    download_tarball "$package_url" "$package_filename" "$checksum"
+  }
+
+  { tar xzvf "$package_filename"
+    rm -f "$package_filename"
+  } >&4 2>&1
+}
+
+symlink_tarball_from_cache() {
+  [ -n "$TARBALL_CACHE_PATH" ] || return 1
+
+  local package_filename="$1"
+  local cached_package_filename="${TARBALL_CACHE_PATH}/$package_filename"
+  local checksum="$2"
+
+  [ -e "$cached_package_filename" ] || return 1
+  verify_checksum "$cached_package_filename" "$checksum" >&4 2>&1 || return 1
+  ln -s "$cached_package_filename" "$package_filename" >&4 2>&1 || return 1
+}
+
+download_tarball() {
+  local package_url="$1"
+  [ -n "$package_url" ] || return 1
+
+  local package_filename="$2"
+  local checksum="$3"
+
+  echo "-> $package_url" >&2
+
+  { http get "$package_url" > "$package_filename"
+    verify_checksum "$package_filename" "$checksum"
+  } >&4 2>&1 || return 1
+
+  if [ -n "$TARBALL_CACHE_PATH" ]; then
+    local cached_package_filename="${TARBALL_CACHE_PATH}/$package_filename"
+    { mv "$package_filename" "$cached_package_filename"
+      ln -s "$cached_package_filename" "$package_filename"
+    } >&4 2>&1 || return 1
+  fi
+}
+
+fetch_git() {
+  local package_name="$1"
+  local git_url="$2"
+  local git_ref="$3"
+
+  echo "Cloning ${git_url}..." >&2
+
+  if type git &>/dev/null; then
+    git clone --recursive --depth 1 --branch "$git_ref" "$git_url" "${package_name}" >&4 2>&1
+  else
+    echo "error: please install \`git\` and try again" >&2
+    exit 1
+  fi
+}
+
+function install() {
+  printf "install luarocks for $1..."
+  local ROOT=`luaenv root`
+  local PREFIX=$ROOT/versions/$1
+  local HEADER=`find $PREFIX/include -name lua.h`
+  local INC=`dirname $HEADER`
+  local BIN=$PREFIX/bin
+
+  ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config >/dev/null
+
+  if [ $? -ne 0 ]; then
+    printf "\e[31merror: configure luarocks\e[0m\n"
+    exit
+  fi
+
+  make build >/dev/null
+  if [ $? -ne 0 ]; then
+    printf "\e[31merror: build luarocks\e[0m\n"
+    exit
+  fi
+
+  make install >/dev/null
+  if [ $? -ne 0 ]; then
+    printf "\e[31merror: install luarocks\e[0m\n"
+    exit
+  else
+    printf "\e[32mok\e[0m\n"
+  fi
+}
+
+
+function main() {
+  case $1 in
+    all)
+      for version in `luaenv whence lua`; do
+        install $version
+      done
+      ;;
+
+    *.*)
+      for version in `luaenv whence lua`; do
+        if [ $version == $1 ] ; then
+          install $version
+          exit
+        fi
+      done
+      printf "\e[1mError: version \e[31m$1\e[0m \e[1mnot found.\e[0m\n"
+      exit
+      ;;
+
+    *)
+      echo "Usage: luaenv-rocks [<version>|all]"
+      echo ""
+      echo "Install luarocks for your Lua installtion in luaenv."
+      echo ""
+      echo "<version>: install for specified version only"
+      echo "           (same version strings as used in luaenv)."
+      echo "      all: install luarocks for all is the lua versions"
+      echo "           installed in luaenv."
+      exit
+      ;;
+  esac
+}
+
+#main $1
+
+fetch_tarball "lluarocks-2.4.1" "http://luarocks.org/releases/luarocks-2.4.1.tar.gz"
