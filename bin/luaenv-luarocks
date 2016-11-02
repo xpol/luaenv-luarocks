@@ -11,11 +11,14 @@ usage() {
   exit
 }
 
-if [ "$2" == "--verbose" ] || [ "$2" == "-v" ]; then
-  VERBOSE=1
-else
-  VERBOSE=0
-fi
+case "$2" in
+  "--verbose" | "-v")
+    VERBOSE=1
+    ;;
+  *)
+    VERBOSE=0
+    ;;
+esac
 
 run() {
   echo "verbose: $VERBOSE.."
