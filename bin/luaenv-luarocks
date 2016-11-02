@@ -14,7 +14,7 @@ usage() {
 VERBOSE=false
 
 run() {
-  if [ "$VERBOSE" -e "false" ]; then
+  if [ "$VERBOSE" -eq "false" ]; then
     $@ >/dev/null 2>&1
   else
     $@
@@ -149,7 +149,7 @@ install() {
 
 
 main() {
-  if [ "$2" -e "--verbose" ]; then
+  if [ "$2" -eq "--verbose" ]; then
     VERBOSE=true
   fi
   case $1 in
