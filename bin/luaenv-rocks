@@ -1,19 +1,33 @@
 #!/bin/sh
 # Install luarocks for luaenv.
 
+usage() {
+  echo "Usage: luaenv rocks [<luarocks-version>]"
+  echo ""
+  echo "Install specified version of LuaRocks for your Lua installtion in luaenv."
+  echo ""
+  echo "<luarocks-version>: install specified version of LuaRocks"
+  echo "                    (default to latest known stable version)."
+  exit
+}
+
 if [ -z "$LUAENV_ROOT" ]; then
-  LUAENV_ROOT="${HOME}/.luaenv"
+  if type luaenv >/dev/null 2>&1; then
+    LUAENV_ROOT=`luaenv root`
+  else
+    LUAENV_ROOT="${HOME}/.luaenv"
+  fi
 fi
 
 if [ -z "${TARBALL_CACHE_PATH}" ]; then
-  export TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache/tarballs"
+  TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache/tarballs"
   if [ ! -d "${TARBALL_CACHE_PATH}" ]; then
     mkdir -p ${TARBALL_CACHE_PATH}
   fi
 fi
 
 if [ -z "${LUAROCKS_SOURCE_PATH}" ]; then
-  export LUAROCKS_SOURCE_PATH="${LUAENV_ROOT}/cache/sources"
+  LUAROCKS_SOURCE_PATH="${LUAENV_ROOT}/cache/sources"
   if [ ! -d "${LUAROCKS_SOURCE_PATH}" ]; then
     mkdir -p ${LUAROCKS_SOURCE_PATH}
   fi
@@ -26,7 +40,6 @@ download() {
   local filename=`basename "$tofile"`
   local cached_filename="$TARBALL_CACHE_PATH/$filename"
 
-  echo "Checking cache: $cached_filename..."
   if [ ! -f "$cached_filename" ]; then
     echo "Downloading $url..."
     if type aria2c >/dev/null 2>&1; then
@@ -39,6 +52,13 @@ download() {
       echo "error: please install \`aria2c\` or \`curl\` or \`wget\` and try again" >&2
       exit 1
     fi
+    if [ "$?" -ne "0" ]; then
+      echo "error: while download package"
+      rm -f $cached_filename
+      exit 1
+    fi
+  else
+    echo "Cached: $cached_filename"
   fi
   ln -s "$cached_filename" "$tofile" 2>&1 || return 1
 }
@@ -52,14 +72,12 @@ fetch_release() {
 
   download "$package_url" "$target_path"
 
-  {
-    echo "Extracting $package_filename..."
-    tar xzpf "$target_path" -C "${LUAROCKS_SOURCE_PATH}"
-    rm -f "$target_path"
-  } 2>&1
+  echo "Extracting $package_filename..."
+  tar xzpf "$target_path" -C "${LUAROCKS_SOURCE_PATH}"
+  rm -f "$target_path" >/dev/null 2>&1;
 }
 
-fetch_git() {
+fetch_git_head() {
   local package_name="$1"
   local git_url="$2"
   local git_ref="$3"
@@ -74,70 +92,45 @@ fetch_git() {
   fi
 }
 
+
 install() {
-  printf "install luarocks for $1..."
-  local ROOT=`luaenv root`
-  local PREFIX=$ROOT/versions/$1
+  local LUAROCKS_VERSION=$1
+  if [ -z "$LUAROCKS_VERSION" ]; then
+    LUAROCKS_VERSION="2.4.1"
+  fi
+  local LUA_VERSION=`luaenv version-name`
+  local PREFIX=$LUAENV_ROOT/versions/$LUA_VERSION
+  printf "install LuaRocks $LUAROCKS_VERSION for $PREFIX..."
+
+  fetch_release "$LUAROCKS_VERSION"
+
+  local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
+  pushd $SOURCE
   local HEADER=`find $PREFIX/include -name lua.h`
   local INC=`dirname $HEADER`
   local BIN=$PREFIX/bin
 
-  ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config >/dev/null
-
-  if [ $? -ne 0 ]; then
-    printf "\e[31merror: configure luarocks\e[0m\n"
-    exit
-  fi
-
-  make build >/dev/null
-  if [ $? -ne 0 ]; then
-    printf "\e[31merror: build luarocks\e[0m\n"
-    exit
-  fi
-
-  make install >/dev/null
-  if [ $? -ne 0 ]; then
-    printf "\e[31merror: install luarocks\e[0m\n"
-    exit
-  else
-    printf "\e[32mok\e[0m\n"
+  { ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
+    make bootstrap
+  } >/dev/null
+  local STATUS="$?"
+  popd
+  if [ "$STATUS" -ne "0" ]; then
+    echo "Error while install LuaRocks"
+    exit 1
   fi
 }
 
 
 main() {
   case $1 in
-    all)
-      for version in `luaenv whence lua`; do
-        install $version
-      done
+    *.*.*)
+      install "$1"
       ;;
-
-    *.*)
-      for version in `luaenv whence lua`; do
-        if [ $version == $1 ] ; then
-          install $version
-          exit
-        fi
-      done
-      printf "\e[1mError: version \e[31m$1\e[0m \e[1mnot found.\e[0m\n"
-      exit
-      ;;
-
     *)
-      echo "Usage: luaenv-rocks [<version>|all]"
-      echo ""
-      echo "Install luarocks for your Lua installtion in luaenv."
-      echo ""
-      echo "<version>: install for specified version only"
-      echo "           (same version strings as used in luaenv)."
-      echo "      all: install luarocks for all is the lua versions"
-      echo "           installed in luaenv."
-      exit
+      usage
       ;;
   esac
 }
 
-#main $1
-
-fetch_release "2.4.1"
+main $1
