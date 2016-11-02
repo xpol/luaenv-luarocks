@@ -149,7 +149,7 @@ install() {
 
 
 main() {
-  if [ "$2" -eq "--verbose" ]; then
+  if [ "$2" == "--verbose" ]; then
     VERBOSE=1
   fi
   case $1 in
