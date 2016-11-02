@@ -111,11 +111,14 @@ install() {
   local INC=`dirname $HEADER`
   local BIN=$PREFIX/bin
 
-  { ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
+  { echo "Entering directory: `pwd`"
+    ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
     make bootstrap
   } >/dev/null
   local STATUS="$?"
+  echo "Leaving directory: `pwd`"
   cd $CWD
+  echo "Now: `pwd`"
   if [ "$STATUS" -ne "0" ]; then
     echo "Error while install LuaRocks"
     exit 1
