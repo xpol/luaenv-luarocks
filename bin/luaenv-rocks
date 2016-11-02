@@ -118,7 +118,7 @@ install() {
   local INC=`dirname $HEADER`
   local BIN=$PREFIX/bin
 
-  {./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
+  { ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
     make bootstrap
   } &>/dev/null
 
