@@ -123,7 +123,7 @@ install() {
 
   local STATUS="$?"
   cd $CWD
-  rm -rf $SOURCE
+  #rm -rf $SOURCE
   if [ "$STATUS" -ne "0" ]; then
     echo "Error while install LuaRocks"
     exit 1
