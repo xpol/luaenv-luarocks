@@ -113,20 +113,16 @@ install() {
 
   local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
   local CWD=`pwd`
-  echo "Entering directory: $SOURCE"
   cd $SOURCE
   local HEADER=`find $PREFIX/include -name lua.h`
   local INC=`dirname $HEADER`
   local BIN=$PREFIX/bin
 
-  { echo "Entering directory: `pwd`"
-    ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
+  {./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
     make bootstrap
-  }
+  } >/dev/null
   local STATUS="$?"
-  echo "Leaving directory: `pwd`"
   cd $CWD
-  echo "Now: `pwd`"
   if [ "$STATUS" -ne "0" ]; then
     echo "Error while install LuaRocks"
     exit 1
