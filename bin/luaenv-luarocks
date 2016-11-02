@@ -11,11 +11,15 @@ usage() {
   exit
 }
 
-VERBOSE=`echo "$@" | grep -q "--verbose"`;
+if [ "$2" == "--verbose" ] || [ "$2" == "-v" ]; then
+  VERBOSE=1
+else
+  VERBOSE=0
+fi
 
 run() {
   echo "verbose: $VERBOSE.."
-  if [ "$VERBOSE" != "" ]; then
+  if [ "$VERBOSE" -eq "0" ]; then
     $@ >/dev/null 2>&1
   else
     $@
@@ -160,4 +164,4 @@ main() {
   esac
 }
 
-main $@
+main $1
