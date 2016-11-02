@@ -106,6 +106,7 @@ install() {
 
   local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
   local CWD=`pwd`
+  echo "Entering directory: $SOURCE"
   cd $SOURCE
   local HEADER=`find $PREFIX/include -name lua.h`
   local INC=`dirname $HEADER`
@@ -114,7 +115,7 @@ install() {
   { echo "Entering directory: `pwd`"
     ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
     make bootstrap
-  } >/dev/null
+  }
   local STATUS="$?"
   echo "Leaving directory: `pwd`"
   cd $CWD
