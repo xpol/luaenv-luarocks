@@ -21,7 +21,6 @@ case "$2" in
 esac
 
 run() {
-  echo "verbose: $VERBOSE.."
   if [ "$VERBOSE" -eq "0" ]; then
     $@ >/dev/null 2>&1
   else
@@ -64,7 +63,7 @@ download() {
   local cached_filename="$TARBALL_CACHE_PATH/$filename"
 
   if [ ! -f "$cached_filename" ]; then
-    echo "Downloading $url..."
+    run echo "Downloading $url..."
     if type aria2c >/dev/null 2>&1; then
       aria2c -x5 -k1m --summary-interval=0 -o "$cached_filename" "$url"
     elif type curl >/dev/null 2>&1; then
@@ -81,7 +80,7 @@ download() {
       exit 1
     fi
   else
-    echo "Cached: $cached_filename"
+    run echo "Cached: $cached_filename"
   fi
   ln -s "$cached_filename" "$tofile" 2>&1 || return 1
 }
