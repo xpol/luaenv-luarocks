@@ -2,7 +2,7 @@
 # Install luarocks for luaenv.
 
 usage() {
-  echo "Usage: luaenv luarocks [<luarocks-version>]"
+  echo "Usage: luaenv luarocks [<luarocks-version>] [--verbose]"
   echo ""
   echo "Install specified version of LuaRocks for your Lua installtion in luaenv."
   echo ""
@@ -11,11 +11,11 @@ usage() {
   exit
 }
 
-VERBOSE=0
+VERBOSE=`echo "$@" | grep -q "--verbose"`;
 
 run() {
   echo "verbose: $VERBOSE.."
-  if [ "$VERBOSE" -eq "0" ]; then
+  if [ "$VERBOSE" != "" ]; then
     $@ >/dev/null 2>&1
   else
     $@
@@ -150,9 +150,6 @@ install() {
 
 
 main() {
-  if [ "$2" == "--verbose" ]; then
-    VERBOSE=1
-  fi
   case $1 in
     *.*.*)
       install "$1"
