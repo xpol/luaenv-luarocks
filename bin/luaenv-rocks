@@ -19,6 +19,14 @@ if [ -z "$LUAENV_ROOT" ]; then
   fi
 fi
 
+if [ -z "$LUAENV_ROOT" ]; then
+  if type unzip >/dev/null 2>&1; then
+  else
+    echo "LuaRocks needs unzip to run, install it form your system package manager."
+    exit 1
+  fi
+fi
+
 if [ -z "${TARBALL_CACHE_PATH}" ]; then
   TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache/tarballs"
   if [ ! -d "${TARBALL_CACHE_PATH}" ]; then
