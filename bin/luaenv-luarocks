@@ -11,10 +11,10 @@ usage() {
   exit
 }
 
-VERBOSE=false
+VERBOSE=0
 
 run() {
-  if [ "$VERBOSE" -eq "false" ]; then
+  if [ "$VERBOSE" -eq "0" ]; then
     $@ >/dev/null 2>&1
   else
     $@
@@ -150,7 +150,7 @@ install() {
 
 main() {
   if [ "$2" -eq "--verbose" ]; then
-    VERBOSE=true
+    VERBOSE=1
   fi
   case $1 in
     *.*.*)
