@@ -108,7 +108,7 @@ fetch_git() {
   fi
 }
 
-function install() {
+install() {
   printf "install luarocks for $1..."
   local ROOT=`luaenv root`
   local PREFIX=$ROOT/versions/$1
@@ -139,7 +139,7 @@ function install() {
 }
 
 
-function main() {
+main() {
   case $1 in
     all)
       for version in `luaenv whence lua`; do
@@ -174,4 +174,4 @@ function main() {
 
 #main $1
 
-http get "http://luarocks.org/releases/luarocks-2.4.1.tar.gz" > "luarocks-2.4.1.tar.gz" 
+http get "http://luarocks.org/releases/luarocks-2.4.1.tar.gz" > "luarocks-2.4.1.tar.gz"
