@@ -94,9 +94,9 @@ fetch_release() {
 
   download "$package_url" "$target_path"
 
-  echo "Extracting $package_filename..."
+  run echo "Extracting $package_filename..."
   tar xzpf "$target_path" -C "${LUAROCKS_SOURCE_PATH}"
-  rm -f "$target_path" >/dev/null 2>&1;
+  run rm -f "$target_path"
 }
 
 fetch_git_head() {
@@ -122,7 +122,7 @@ install() {
   fi
   local LUA_VERSION=`luaenv version-name`
   local PREFIX=$LUAENV_ROOT/versions/$LUA_VERSION
-  echo "install LuaRocks $LUAROCKS_VERSION for $PREFIX..."
+  echo "Install LuaRocks $LUAROCKS_VERSION into $PREFIX..."
 
   local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
   run rm -rf $SOURCE
