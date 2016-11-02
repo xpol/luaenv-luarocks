@@ -33,11 +33,11 @@ download() {
 }
 
 
-fetch_tarball() {
-  local package_name="$1"
-  local package_url="$2"
+fetch_release() {
+  local version="$1"
+  local package_filename="luarocks-$version.tar.gz"
+  local package_url="https://keplerproject.github.io/luarocks/releases/$package_filename"
 
-  local package_filename="${package_name}.tar.gz"
   download "$package_url" "$package_filename"
 
   {
@@ -161,4 +161,4 @@ main() {
 
 #main $1
 
-fetch_tarball "luarocks-2.4.1" "https://keplerproject.github.io/luarocks/releases/luarocks-2.4.1.tar.gz"
+fetch_release "2.4.1"
