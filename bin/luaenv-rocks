@@ -9,13 +9,6 @@ if [ -z "${TARBALL_CACHE_PATH}" ] && [ -d "${LUAENV_ROOT}/cache" ]; then
   export TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache"
 fi
 
-if type gpg &>/dev/null; then
-  HAS_GPG_SUPPORT=1
-else
-  unset HAS_GPG_SUPPORT
-fi
-
-
 http() {
   local method="$1"
   local url="$2"
@@ -181,4 +174,4 @@ function main() {
 
 #main $1
 
-fetch_tarball "lluarocks-2.4.1" "http://luarocks.org/releases/luarocks-2.4.1.tar.gz"
+http get "http://luarocks.org/releases/luarocks-2.4.1.tar.gz" > "luarocks-2.4.1.tar.gz" 
