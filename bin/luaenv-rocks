@@ -126,6 +126,8 @@ install() {
   if [ "$STATUS" -ne "0" ]; then
     echo "Error while install LuaRocks"
     exit 1
+  else
+    luaenv rehash
   fi
 }
 
