@@ -27,7 +27,7 @@ download() {
       exit 1
     fi
   fi
-  ln -s "$cached_filename" "$filename" >&4 2>&1 || return 1
+  ln -s "$cached_filename" "$filename" 2>&1 || return 1
 }
 
 
@@ -40,7 +40,7 @@ fetch_tarball() {
 
   { tar xzvf "$package_filename"
     rm -f "$package_filename"
-  } >&4 2>&1
+  } 2>&1
 }
 
 symlink_tarball_from_cache() {
