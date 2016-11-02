@@ -120,7 +120,8 @@ install() {
 
   {./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
     make bootstrap
-  } >/dev/null
+  } &>/dev/null
+
   local STATUS="$?"
   cd $CWD
   if [ "$STATUS" -ne "0" ]; then
