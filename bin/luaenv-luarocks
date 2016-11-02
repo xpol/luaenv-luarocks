@@ -129,6 +129,7 @@ install() {
     exit 1
   else
     luaenv rehash
+    exit 0
   fi
 }
 
