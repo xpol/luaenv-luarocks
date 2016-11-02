@@ -109,7 +109,7 @@ install() {
 
   fetch_release "$LUAROCKS_VERSION"
 
-  required(unzip)
+  required unzip
 
   local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
   local CWD=`pwd`
