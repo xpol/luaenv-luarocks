@@ -107,11 +107,12 @@ install() {
   local PREFIX=$LUAENV_ROOT/versions/$LUA_VERSION
   echo "install LuaRocks $LUAROCKS_VERSION for $PREFIX..."
 
+  local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
+  rm -rf SOURCE
   fetch_release "$LUAROCKS_VERSION"
 
   required unzip
 
-  local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
   local CWD=`pwd`
   cd $SOURCE
   local HEADER=`find $PREFIX/include -name lua.h`
@@ -123,7 +124,6 @@ install() {
 
   local STATUS="$?"
   cd $CWD
-  rm -rf $SOURCE
   if [ "$STATUS" -ne "0" ]; then
     echo "Error while install LuaRocks"
     exit 1
