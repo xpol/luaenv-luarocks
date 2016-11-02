@@ -5,14 +5,25 @@ if [ -z "$LUAENV_ROOT" ]; then
   LUAENV_ROOT="${HOME}/.luaenv"
 fi
 
-if [ -z "${TARBALL_CACHE_PATH}" ] && [ -d "${LUAENV_ROOT}/cache" ]; then
-  export TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache"
+if [ -z "${TARBALL_CACHE_PATH}" ]; then
+  export TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache/tarballs"
+  if [ ! -d "${TARBALL_CACHE_PATH}" ]; then
+    mkdir -p ${TARBALL_CACHE_PATH}
+  fi
+fi
+
+if [ -z "${LUAROCKS_SOURCE_PATH}" ]; then
+  export LUAROCKS_SOURCE_PATH="${LUAENV_ROOT}/cache/sources"
+  if [ ! -d "${LUAROCKS_SOURCE_PATH}" ]; then
+    mkdir -p ${LUAROCKS_SOURCE_PATH}
+  fi
 fi
 
 download() {
   local url="$1"
-  local filename="$2"
-  [ -n "$url" ] || [ -n "$filename" ] || return 1
+  local tofile="$2"
+  [ -n "$url" ] || [ -n "$tofile" ] || return 1
+  local filename=`basename "$tofile"`
   local cached_filename="$TARBALL_CACHE_PATH/$filename"
 
   echo "Checking cache: $cached_filename..."
@@ -29,7 +40,7 @@ download() {
       exit 1
     fi
   fi
-  ln -s "$cached_filename" "$filename" 2>&1 || return 1
+  ln -s "$cached_filename" "$tofile" 2>&1 || return 1
 }
 
 
@@ -37,47 +48,15 @@ fetch_release() {
   local version="$1"
   local package_filename="luarocks-$version.tar.gz"
   local package_url="https://keplerproject.github.io/luarocks/releases/$package_filename"
+  local target_path="${LUAROCKS_SOURCE_PATH}/$package_filename"
 
-  download "$package_url" "$package_filename"
+  download "$package_url" "$target_path"
 
   {
     echo "Extracting $package_filename..."
-    tar xzpf "$package_filename"
-    rm -f "$package_filename"
+    tar xzpf "$target_path" -C "${LUAROCKS_SOURCE_PATH}"
+    rm -f "$target_path"
   } 2>&1
-}
-
-symlink_tarball_from_cache() {
-  [ -n "$TARBALL_CACHE_PATH" ] || return 1
-
-  local package_filename="$1"
-  local cached_package_filename="${TARBALL_CACHE_PATH}/$package_filename"
-  local checksum="$2"
-
-  [ -e "$cached_package_filename" ] || return 1
-  verify_checksum "$cached_package_filename" "$checksum" >&4 2>&1 || return 1
-  ln -s "$cached_package_filename" "$package_filename" >&4 2>&1 || return 1
-}
-
-download_tarball() {
-  local package_url="$1"
-  [ -n "$package_url" ] || return 1
-
-  local package_filename="$2"
-  local checksum="$3"
-
-  echo "-> $package_url" >&2
-
-  { http get "$package_url" > "$package_filename"
-    #verify_checksum "$package_filename" "$checksum"
-  } >&4 2>&1 || return 1
-
-  if [ -n "$TARBALL_CACHE_PATH" ]; then
-    local cached_package_filename="${TARBALL_CACHE_PATH}/$package_filename"
-    { mv "$package_filename" "$cached_package_filename"
-      ln -s "$cached_package_filename" "$package_filename"
-    } >&4 2>&1 || return 1
-  fi
 }
 
 fetch_git() {
