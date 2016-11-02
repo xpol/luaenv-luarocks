@@ -119,18 +119,22 @@ install() {
   local INC=`dirname $HEADER`
   local BIN=$PREFIX/bin
 
-  ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config &> /dev/null
-  make bootstrap &> /dev/null
-
-  local STATUS="$?"
-  cd $CWD
-  if [ "$STATUS" -ne "0" ]; then
-    echo "Error while install LuaRocks"
+  ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config > /dev/null 2> /dev/null
+  if [ "$?" -ne "0" ]; then
+    echo "Error while configure LuaRocks"
+    cd $CWD
     exit 1
-  else
-    luaenv rehash
-    exit 0
   fi
+
+  make bootstrap > /dev/null
+  if [ "$?" -ne "0" ]; then
+    echo "Error while install LuaRocks"
+    cd $CWD
+    exit 1
+  fi
+
+  cd $CWD
+  luaenv rehash
 }
 
 
