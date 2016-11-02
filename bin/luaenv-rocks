@@ -14,11 +14,11 @@ download() {
   local filename="$2"
   [ -n "$url" ] || [ -n "$filename" ] || return 1
 
-  if type aria2c &>/dev/null; then
+  if type aria2c >/dev/null 2>&1; then
      aria2c -x5 -k1m -o "$filename" "$url"
-  elif type curl &>/dev/null; then
+  elif type curl >/dev/null 2>&1; then
     curl -o "$filename" "$url"
-  elif type wget &>/dev/null; then
+  elif type wget >/dev/null 2>&1; then
     wget -O "$filename" "$url"
   else
     echo "error: please install \`aria2c\` or \`curl\` or \`wget\` and try again" >&2
