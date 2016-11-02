@@ -34,7 +34,7 @@ if [ -z "${LUAROCKS_SOURCE_PATH}" ]; then
 fi
 
 required() {
-  type $1 >/dev/null 2>&1 || { echo "LuaRocks needs $1 to run."; exit 1 }
+  type $1 >/dev/null 2>&1 || { echo "LuaRocks needs $1 to run."; exit 1; }
 }
 
 
