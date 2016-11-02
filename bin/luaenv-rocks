@@ -19,14 +19,6 @@ if [ -z "$LUAENV_ROOT" ]; then
   fi
 fi
 
-if [ -z "$LUAENV_ROOT" ]; then
-  if type unzip >/dev/null 2>&1; then
-  else
-    echo "LuaRocks needs unzip to run, install it form your system package manager."
-    exit 1
-  fi
-fi
-
 if [ -z "${TARBALL_CACHE_PATH}" ]; then
   TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache/tarballs"
   if [ ! -d "${TARBALL_CACHE_PATH}" ]; then
@@ -40,6 +32,11 @@ if [ -z "${LUAROCKS_SOURCE_PATH}" ]; then
     mkdir -p ${LUAROCKS_SOURCE_PATH}
   fi
 fi
+
+required() {
+  type $1 >/dev/null 2>&1 || { echo "LuaRocks needs $1 to run."; exit 1 }
+}
+
 
 download() {
   local url="$1"
@@ -111,6 +108,8 @@ install() {
   echo "install LuaRocks $LUAROCKS_VERSION for $PREFIX..."
 
   fetch_release "$LUAROCKS_VERSION"
+
+  required(unzip)
 
   local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
   local CWD=`pwd`
