@@ -40,7 +40,9 @@ fetch_tarball() {
   local package_filename="${package_name}.tar.gz"
   download "$package_url" "$package_filename"
 
-  { tar xzvf "$package_filename"
+  {
+    echo "Extracting $package_filename..."
+    tar xzpf "$package_filename"
     rm -f "$package_filename"
   } 2>&1
 }
