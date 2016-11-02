@@ -16,6 +16,7 @@ download() {
   local cached_filename="$TARBALL_CACHE_PATH/$filename"
 
   if [ ! -f "$cached_filename"]; then
+    echo "Downloading $url..."
     if type aria2c >/dev/null 2>&1; then
       aria2c -x5 -k1m --summary-interval=0 -o "$cached_filename" "$url"
     elif type curl >/dev/null 2>&1; then
