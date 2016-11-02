@@ -2,7 +2,7 @@
 # Install luarocks for luaenv.
 
 usage() {
-  echo "Usage: luaenv rocks [<luarocks-version>]"
+  echo "Usage: luaenv luarocks [<luarocks-version>]"
   echo ""
   echo "Install specified version of LuaRocks for your Lua installtion in luaenv."
   echo ""
