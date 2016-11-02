@@ -11,6 +11,16 @@ usage() {
   exit
 }
 
+VERBOSE=false
+
+run() {
+  if [ "$VERBOSE" -e "false" ]; then
+    $@ >/dev/null 2>&1
+  else
+    $@
+  fi
+}
+
 if [ -z "$LUAENV_ROOT" ]; then
   if type luaenv >/dev/null 2>&1; then
     LUAENV_ROOT=`luaenv root`
@@ -108,7 +118,7 @@ install() {
   echo "install LuaRocks $LUAROCKS_VERSION for $PREFIX..."
 
   local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
-  rm -rf SOURCE
+  run rm -rf $SOURCE
   fetch_release "$LUAROCKS_VERSION"
 
   required unzip
@@ -119,14 +129,14 @@ install() {
   local INC=`dirname $HEADER`
   local BIN=$PREFIX/bin
 
-  ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config > /dev/null 2> /dev/null
+  run ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
   if [ "$?" -ne "0" ]; then
     echo "Error while configure LuaRocks"
     cd $CWD
     exit 1
   fi
 
-  make bootstrap > /dev/null
+  run make bootstrap
   if [ "$?" -ne "0" ]; then
     echo "Error while install LuaRocks"
     cd $CWD
@@ -134,11 +144,14 @@ install() {
   fi
 
   cd $CWD
-  luaenv rehash
+  run luaenv rehash
 }
 
 
 main() {
+  if [ "$2" -e "--verbose" ]; then
+    VERBOSE=true
+  fi
   case $1 in
     *.*.*)
       install "$1"
@@ -149,4 +162,4 @@ main() {
   esac
 }
 
-main $1
+main $@
