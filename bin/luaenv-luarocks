@@ -192,7 +192,7 @@ end
 
 local function main(...)
   local opts = parse_arg({...})
-  if not opts.version or not opts.version:match('^%d+%.%d+.*') then
+  if opts.version and not opts.version:match('^%d+%.%d+.*') then
     return usage()
   end
   setup_environments()
