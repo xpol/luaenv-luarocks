@@ -8,18 +8,13 @@ end
 local sh = {}
 
 function sh.execf(cmd, ...)
-  if select('#', ...) > 0 then
-    cmd = cmd:format(...)
-  end
+  cmd = cmd:format(...)
   local rc = os.execute(cmd)
   return rc == true or rc == 0
 end
 
 function sh.capturef(cmd, ...)
-  if select('#', ...) > 0 then
-    cmd = cmd:format(...)
-  end
-
+  cmd = cmd:format(...)
   local h = io.popen(cmd)
   local stdout = h:read('*a')
   h:close()
@@ -79,7 +74,8 @@ function sh.download(url, path)
   local tmp = path..'.tmp'
   local ok = false
   if sh.has_command('aria2c') then
-    ok = sh.execf('aria2c -x5 -k1m --summary-interval=0 -o "%s" "%s"', tmp, url)
+    local d, f = tmp:match('^(.-)/([^/]+)$')
+    ok = sh.execf('aria2c -x5 -k1m -q -d "%s" -o "%s" "%s"', d, f, url)
   elseif sh.has_command('curl') then
     ok = sh.execf('curl -qsS -o "%s" "%s"', tmp, url)
   elseif sh.has_command('wget') then
@@ -101,16 +97,13 @@ local vars = {}
 
 local function setup_environments()
   vars.LUAENV_ROOT = sh.capturef('luaenv root')
-  vars.TARBALL_CACHE = vars.LUAENV_ROOT..'/cache/tarballs'
-  vars.SOURCE_CACHE = vars.LUAENV_ROOT..'/cache/sources'
-  sh.ensure(vars.TARBALL_CACHE)
-  sh.ensure(vars.SOURCE_CACHE)
+  vars.CACHE = vars.LUAENV_ROOT..'/plugins/luaenv-luarocks/.cache'
+  sh.ensure(vars.CACHE)
 end
 
 
 local function usage(code)
-  print(
-[[Usage: luaenv luarocks [<luarocks-version>] [--verbose]
+p([[Usage: luaenv luarocks [<luarocks-version>] [--verbose]
 
 Install specified version of LuaRocks for your Lua installtion in luaenv.
 
@@ -125,10 +118,14 @@ local function tarball_url_for_version(version)
   return ('https://keplerproject.github.io/luarocks/releases/luarocks-%s.tar.gz'):format(version)
 end
 
+local function source_dir_for_version(version)
+  return ('%s/luarocks-%s'):format(vars.CACHE, version)
+end
+
 local function fetch_release(version)
   local url = tarball_url_for_version(version)
   local filename = sh.basename(url)
-  local target_path = vars.TARBALL_CACHE..'/'..filename
+  local target_path = vars.CACHE..'/'..filename
 
 
   if not sh.download(url, target_path) then
@@ -137,9 +134,9 @@ local function fetch_release(version)
   end
 
   --p('Extracting %s...', filename)
-  local srcdir = vars.SOURCE_CACHE..'/luarocks-'..version
+  local srcdir = source_dir_for_version(version)
   sh.rmrf(srcdir)
-  sh.unpack_tarball(target_path, vars.SOURCE_CACHE)
+  sh.unpack_tarball(target_path, vars.CACHE)
   return srcdir
 end
 
@@ -167,6 +164,7 @@ local function install(version)
   end
 
   sh.execf('luaenv rehash')
+  sh.rmrf(source_dir_for_version(version))
 end
 
 
