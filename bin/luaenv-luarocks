@@ -16,7 +16,7 @@ function sh.execf(cmd, ...)
   return rc == true or rc == 0
 end
 
-function sh.capture(cmd, ...)
+function sh.capturef(cmd, ...)
   if select('#', ...) > 0 then
     cmd = cmd:format(...)
   end
@@ -101,7 +101,7 @@ end
 local vars = {}
 
 local function setup_environments()
-  vars.LUAENV_ROOT = sh.capture('luaenv root')
+  vars.LUAENV_ROOT = sh.capturef('luaenv root')
   vars.TARBALL_CACHE = vars.LUAENV_ROOT..'/cache/tarballs'
   vars.SOURCE_CACHE = vars.LUAENV_ROOT..'/cache/sources'
   sh.ensure(vars.TARBALL_CACHE)
@@ -150,8 +150,8 @@ local function install(version)
 
   version = version or "2.4.1"
 
-  local PREFIX = vars.LUAENV_ROOT..'/versions/'..sh.capture('luaenv version-name')
-  local INC = sh.capture('find $PREFIX/include -name lua.h'):gsub('/lua%.h$', '')
+  local PREFIX = vars.LUAENV_ROOT..'/versions/'..sh.capturef('luaenv version-name')
+  local INC = sh.capturef('find %s/include -name lua.h', PREFIX):gsub('/lua%.h$', '')
   local BIN = PREFIX..'/bin'
 
   p('Install LuaRocks %s into %s...', version, PREFIX)
