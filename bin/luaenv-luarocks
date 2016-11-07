@@ -1,169 +1,202 @@
-#!/bin/sh
-# Install luarocks for luaenv.
+#!/usr/bin/env lua
+-- Install luarocks for luaenv.
 
-usage() {
-  echo "Usage: luaenv luarocks [<luarocks-version>] [--verbose]"
-  echo ""
-  echo "Install specified version of LuaRocks for your Lua installtion in luaenv."
-  echo ""
-  echo "<luarocks-version>: install specified version of LuaRocks"
-  echo "                    (default to latest known stable version)."
-  exit
-}
+local function p(s, ...)
+  print(s:format(...))
+end
 
-case "$2" in
-  "--verbose" | "-v")
-    VERBOSE=1
-    ;;
-  *)
-    VERBOSE=0
-    ;;
-esac
+local sh = {}
 
-run() {
-  if [ "$VERBOSE" -eq "0" ]; then
-    $@ >/dev/null 2>&1
+function sh.execf(cmd, ...)
+  if select('#', ...) > 0 then
+    cmd = cmd:format(...)
+  end
+  local rc = os.execute(cmd)
+  return rc == true or rc == 0
+end
+
+function sh.capture(cmd, ...)
+  if select('#', ...) > 0 then
+    cmd = cmd:format(...)
+  end
+
+  local h = io.popen(cmd)
+  local stdout = h:read('*a')
+  h:close()
+  return stdout
+end
+
+function sh.mkdirp(dir)
+  return sh.execf('mkdir -p "%s"', dir)
+end
+
+function sh.exists(path)
+  return sh.execf('test -e "%s"', path)
+end
+
+function sh.rmrf(path)
+  return sh.execf('rm -rf "%s"', path)
+end
+
+function sh.unpack_tarball(tar_gz, intodir)
+  if intodir then
+    return sh.execf('tar xzpf "%s" -C "%s"', tar_gz, intodir)
   else
-    $@
-  fi
-}
+    return sh.execf('tar zxpf "%s"', tar_gz)
+  end
+end
 
-if [ -z "$LUAENV_ROOT" ]; then
-  if type luaenv >/dev/null 2>&1; then
-    LUAENV_ROOT=`luaenv root`
+function sh.has_command(cmd)
+  return sh.execf('type %s >/dev/null 2>&1', cmd)
+end
+
+function sh.required_one_of(cmd,...)
+  local cmds = {cmd, ...}
+  for _, v in ipairs(cmds) do
+    if sh.has_command(v) then
+      return true
+    end
+  end
+  p("Required at least one of follow commands installed: %s.", table.concat(cmds, ', '))
+  os.exit(1)
+end
+
+function sh.ensure(dir)
+  if not sh.exists(dir) then
+    sh.mkdirp(dir)
+  end
+end
+
+function sh.basename(path)
+  return (path:match('([^/]+)$'))
+end
+
+
+function sh.download(url, path)
+  if sh.exists(path) then
+    return true
+  end
+  local tmp = path..'.tmp'
+  local ok = false
+  if sh.has_command('aria2c') then
+    ok = sh.execf('aria2c -x5 -k1m --summary-interval=0 -o "%s" "%s"', tmp, url)
+  elseif sh.has_command('curl') then
+    ok = sh.execf('curl -qsS -o "%s" "%s"', tmp, url)
+  elseif sh.has_command('wget') then
+    ok = sh.execf('wget -nv -O "%s" "%s"', tmp, url)
   else
-    LUAENV_ROOT="${HOME}/.luaenv"
-  fi
-fi
+    p('error: please install `aria2c` or `curl` or `wget` and try again')
+    os.exit(1)
+  end
 
-if [ -z "${TARBALL_CACHE_PATH}" ]; then
-  TARBALL_CACHE_PATH="${LUAENV_ROOT}/cache/tarballs"
-  if [ ! -d "${TARBALL_CACHE_PATH}" ]; then
-    mkdir -p ${TARBALL_CACHE_PATH}
-  fi
-fi
+  if ok then
+    return os.rename(tmp, path)
+  else
+    os.remove(tmp)
+    return false
+  end
+end
 
-if [ -z "${LUAROCKS_SOURCE_PATH}" ]; then
-  LUAROCKS_SOURCE_PATH="${LUAENV_ROOT}/cache/sources"
-  if [ ! -d "${LUAROCKS_SOURCE_PATH}" ]; then
-    mkdir -p ${LUAROCKS_SOURCE_PATH}
-  fi
-fi
+local vars = {}
 
-required() {
-  type $1 >/dev/null 2>&1 || { echo "LuaRocks needs $1 to run."; exit 1; }
-}
+local function setup_environments()
+  vars.LUAENV_ROOT = sh.capture('luaenv root')
+  vars.TARBALL_CACHE = vars.LUAENV_ROOT..'/cache/tarballs'
+  vars.SOURCE_CACHE = vars.LUAENV_ROOT..'/cache/sources'
+  sh.ensure(vars.TARBALL_CACHE)
+  sh.ensure(vars.SOURCE_CACHE)
+end
 
 
-download() {
-  local url="$1"
-  local tofile="$2"
-  [ -n "$url" ] || [ -n "$tofile" ] || return 1
-  local filename=`basename "$tofile"`
-  local cached_filename="$TARBALL_CACHE_PATH/$filename"
+local function usage(code)
+  print(
+[[Usage: luaenv luarocks [<luarocks-version>] [--verbose]
 
-  if [ ! -f "$cached_filename" ]; then
-    run echo "Downloading $url..."
-    if type aria2c >/dev/null 2>&1; then
-      aria2c -x5 -k1m --summary-interval=0 -o "$cached_filename" "$url"
-    elif type curl >/dev/null 2>&1; then
-      curl -qsS -o "$cached_filename" "$url"
-    elif type wget >/dev/null 2>&1; then
-      wget -nv -O "$cached_filename" "$url"
+Install specified version of LuaRocks for your Lua installtion in luaenv.
+
+<luarocks-version>: install specified version of LuaRocks
+                    (default to latest known stable version).
+]])
+
+  os.exit(code or 1)
+end
+
+local function tarball_url_for_version(version)
+  return ('https://keplerproject.github.io/luarocks/releases/luarocks-%s.tar.gz'):format(version)
+end
+
+local function fetch_release(version)
+  local url = tarball_url_for_version(version)
+  local filename = sh.basename(url)
+  local target_path = vars.TARBALL_CACHE..'/'..filename
+
+
+  if not sh.download(url, target_path) then
+    p('Error while downloading %s', url)
+    os.exit(1)
+  end
+
+  p('Extracting %s...', filename)
+  local srcdir = vars.SOURCE_CACHE..'/luarocks-'..version
+  sh.rmrf(srcdir)
+  sh.unpack_tarball(target_path, vars.SOURCE_CACHE)
+  return srcdir
+end
+
+local function install(version)
+  sh.required_one_of('unzip')
+  sh.required_one_of('aria2c', 'curl', 'wget')
+
+  version = version or "2.4.1"
+
+  local PREFIX = vars.LUAENV_ROOT..'/versions/'..sh.capture('luaenv version-name')
+  local INC = sh.capture('find $PREFIX/include -name lua.h'):gsub('/lua%.h$', '')
+  local BIN = PREFIX..'/bin'
+
+  p('Install LuaRocks %s into %s...', version, PREFIX)
+
+  local srcdir = fetch_release(version)
+  if not sh.execf('cd "%s" && ./configure --prefix="%s" --with-lua-bin="%s" --with-lua-include="%s" --force-config', srcdir, PREFIX, BIN, INC) then
+    p('Error while configure LuaRocks')
+    os.exit(1)
+  end
+
+  if not sh.execf('cd "%s" && make bootstrap', srcdir) then
+    p('Error while install LuaRocks')
+    os.exit(1)
+  end
+
+  sh.execf('luaenv rehash')
+end
+
+
+local function parse_arg(arg)
+  local options = {
+    verbose={argc=0}
+  }
+
+  local opts = {}
+  for _, v in ipairs(arg) do
+    local o = v:match('^%-%-(.+)')
+    if o and options[o] then
+      if options[o].argc == 0 then
+        opts[o] = true
+      end
     else
-      echo "error: please install \`aria2c\` or \`curl\` or \`wget\` and try again" >&2
-      exit 1
-    fi
-    if [ "$?" -ne "0" ]; then
-      echo "error: while download package"
-      rm -f $cached_filename
-      exit 1
-    fi
-  else
-    run echo "Cached: $cached_filename"
-  fi
-  ln -s "$cached_filename" "$tofile" 2>&1 || return 1
-}
+      opts.version = v
+    end
+  end
+  return opts
+end
 
 
-fetch_release() {
-  local version="$1"
-  local package_filename="luarocks-$version.tar.gz"
-  local package_url="https://keplerproject.github.io/luarocks/releases/$package_filename"
-  local target_path="${LUAROCKS_SOURCE_PATH}/$package_filename"
+local function main(...)
+  local opts = parse_arg({...})
+  if not opts.version or not opts.version:match('^%d+%.%d+.*') then
+    return usage()
+  end
+  setup_environments()
+  install(opts.version)
+end
 
-  download "$package_url" "$target_path"
-
-  run echo "Extracting $package_filename..."
-  tar xzpf "$target_path" -C "${LUAROCKS_SOURCE_PATH}"
-  run rm -f "$target_path"
-}
-
-fetch_git_head() {
-  local package_name="$1"
-  local git_url="$2"
-  local git_ref="$3"
-
-  echo "Cloning ${git_url}..." >&2
-
-  if type git &>/dev/null; then
-    git clone --recursive --depth 1 --branch "$git_ref" "$git_url" "${package_name}" >&4 2>&1
-  else
-    echo "error: please install \`git\` and try again" >&2
-    exit 1
-  fi
-}
-
-
-install() {
-  local LUAROCKS_VERSION=$1
-  if [ -z "$LUAROCKS_VERSION" ]; then
-    LUAROCKS_VERSION="2.4.1"
-  fi
-  local LUA_VERSION=`luaenv version-name`
-  local PREFIX=$LUAENV_ROOT/versions/$LUA_VERSION
-  echo "Install LuaRocks $LUAROCKS_VERSION into $PREFIX..."
-
-  local SOURCE=$LUAROCKS_SOURCE_PATH/luarocks-$LUAROCKS_VERSION
-  run rm -rf $SOURCE
-  fetch_release "$LUAROCKS_VERSION"
-
-  required unzip
-
-  local CWD=`pwd`
-  cd $SOURCE
-  local HEADER=`find $PREFIX/include -name lua.h`
-  local INC=`dirname $HEADER`
-  local BIN=$PREFIX/bin
-
-  run ./configure --prefix=$PREFIX --with-lua-bin=$BIN --with-lua-include=$INC --force-config
-  if [ "$?" -ne "0" ]; then
-    echo "Error while configure LuaRocks"
-    cd $CWD
-    exit 1
-  fi
-
-  run make bootstrap
-  if [ "$?" -ne "0" ]; then
-    echo "Error while install LuaRocks"
-    cd $CWD
-    exit 1
-  fi
-
-  cd $CWD
-  run luaenv rehash
-}
-
-
-main() {
-  case $1 in
-    *.*.*)
-      install "$1"
-      ;;
-    *)
-      usage
-      ;;
-  esac
-}
-
-main $1
+main(...)
