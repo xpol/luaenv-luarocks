@@ -136,7 +136,7 @@ local function fetch_release(version)
     os.exit(1)
   end
 
-  p('Extracting %s...', filename)
+  --p('Extracting %s...', filename)
   local srcdir = vars.SOURCE_CACHE..'/luarocks-'..version
   sh.rmrf(srcdir)
   sh.unpack_tarball(target_path, vars.SOURCE_CACHE)
