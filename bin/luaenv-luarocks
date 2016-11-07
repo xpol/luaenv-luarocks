@@ -11,6 +11,7 @@ function sh.execf(cmd, ...)
   if select('#', ...) > 0 then
     cmd = cmd:format(...)
   end
+  p(cmd)
   local rc = os.execute(cmd)
   return rc == true or rc == 0
 end
