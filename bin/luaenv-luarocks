@@ -157,12 +157,12 @@ local function install(version)
   p('Install LuaRocks %s into %s...', version, PREFIX)
 
   local srcdir = fetch_release(version)
-  if not sh.execf('cd "%s" && ./configure --prefix="%s" --with-lua-bin="%s" --with-lua-include="%s" --force-config', srcdir, PREFIX, BIN, INC) then
+  if not sh.execf('cd "%s" && ./configure --prefix="%s" --with-lua-bin="%s" --with-lua-include="%s" --force-config > /dev/null', srcdir, PREFIX, BIN, INC) then
     p('Error while configure LuaRocks')
     os.exit(1)
   end
 
-  if not sh.execf('cd "%s" && make bootstrap', srcdir) then
+  if not sh.execf('cd "%s" && make bootstrap > /dev/null', srcdir) then
     p('Error while install LuaRocks')
     os.exit(1)
   end
