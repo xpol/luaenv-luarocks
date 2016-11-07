@@ -23,7 +23,7 @@ function sh.capture(cmd, ...)
   local h = io.popen(cmd)
   local stdout = h:read('*a')
   h:close()
-  return stdout
+  return stdout:gsub('\n$', '')
 end
 
 function sh.mkdirp(dir)
