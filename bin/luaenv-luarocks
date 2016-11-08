@@ -68,28 +68,16 @@ end
 
 
 function sh.download(url, path)
-  if sh.exists(path) then
-    return true
-  end
-  local tmp = path..'.tmp'
-  local ok = false
   if sh.has_command('aria2c') then
-    local d, f = tmp:match('^(.-)/([^/]+)$')
-    ok = sh.execf('aria2c -x5 -k1m -q -d "%s" -o "%s" "%s"', d, f, url)
+    local d, f = path:match('^(.-)/([^/]+)$')
+    return sh.execf('aria2c -q -d "%s" -o "%s" --conditional-get=true --allow-overwrite "%s"', d, f, url)
   elseif sh.has_command('curl') then
-    ok = sh.execf('curl -qsS -L -o "%s" "%s"', tmp, url)
+    return sh.execf('curl -qsS -L -z "%s" -o "%s" "%s"', path, path, url)
   elseif sh.has_command('wget') then
-    ok = sh.execf('wget -nv -O "%s" "%s"', tmp, url)
+    return sh.execf('wget -nv --timestamping -O "%s" "%s"', path, url)
   else
     p('error: please install `aria2c` or `curl` or `wget` and try again')
     os.exit(1)
-  end
-
-  if ok then
-    return os.rename(tmp, path)
-  else
-    os.remove(tmp)
-    return false
   end
 end
 
