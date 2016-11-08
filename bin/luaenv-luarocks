@@ -77,7 +77,7 @@ function sh.download(url, path)
     local v = vars.VERBOSE and '' or '-q'
     ok = sh.execf('aria2c %s -d "%s" -o "%s" --conditional-get=true --allow-overwrite "%s"', v, d, f, url)
   elseif sh.has_command('curl') then
-    local v = vars.VERBOSE and '' or '-qsS'
+    local v = vars.VERBOSE and '--verbose' or '-qsS'
     ok = sh.execf('curl %s -L -z "%s" -o "%s" "%s"', v, path, path, url)
   elseif sh.has_command('wget') then
     local v = vars.VERBOSE and '' or '-nv'
