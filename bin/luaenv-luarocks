@@ -69,9 +69,11 @@ end
 
 
 function sh.download(url, path)
-  local ok
-  local starts = os.time()
-  p('downloading %s...', url)
+  local ok, starts
+  if vars.VERBOSE then
+    starts = os.time()
+    p('downloading %s...', url)
+  end
   if sh.has_command('aria2c') then
     local d, f = path:match('^(.-)/([^/]+)$')
     local v = vars.VERBOSE and '' or '-q'
@@ -86,7 +88,9 @@ function sh.download(url, path)
     p('error: please install `aria2c` or `curl` or `wget` and try again')
     os.exit(1)
   end
-  p('result: %s, time: %d', ok, os.difftime(os.time(), starts))
+  if vars.VERBOSE then
+    p('result: %s, time: %d', ok, os.difftime(os.time(), starts))
+  end
   return ok
 end
 
