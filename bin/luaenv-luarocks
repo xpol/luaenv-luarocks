@@ -5,6 +5,7 @@ local function p(s, ...)
   print(s:format(...))
 end
 
+local vars = {}
 local sh = {}
 
 function sh.execf(cmd, ...)
@@ -73,11 +74,14 @@ function sh.download(url, path)
   p('downloading %s...', url)
   if sh.has_command('aria2c') then
     local d, f = path:match('^(.-)/([^/]+)$')
-    ok = sh.execf('aria2c -q -d "%s" -o "%s" --conditional-get=true --allow-overwrite "%s"', d, f, url)
+    local v = vars.VERBOSE and '' or '-q'
+    ok = sh.execf('aria2c %s -d "%s" -o "%s" --conditional-get=true --allow-overwrite "%s"', v, d, f, url)
   elseif sh.has_command('curl') then
-    ok = sh.execf('curl -qsS -L -z "%s" -o "%s" "%s"', path, path, url)
+    local v = vars.VERBOSE and '' or '-qsS'
+    ok = sh.execf('curl %s -L -z "%s" -o "%s" "%s"', v, path, path, url)
   elseif sh.has_command('wget') then
-    ok = sh.execf('wget -nv --timestamping -O "%s" "%s"', path, url)
+    local v = vars.VERBOSE and '' or '-nv'
+    ok = sh.execf('wget %s --timestamping -O "%s" "%s"', v, path, url)
   else
     p('error: please install `aria2c` or `curl` or `wget` and try again')
     os.exit(1)
@@ -86,8 +90,6 @@ function sh.download(url, path)
   return ok
 end
 
-
-local vars = {}
 
 -- return a list or known versions, the latert version in front
 local function known_versions()
@@ -117,7 +119,8 @@ local function known_versions()
 end
 
 
-local function setup_environments()
+local function setup_environments(opts)
+  if opts.verbose then vars.VERBOSE = true end
   vars.LUAENV_ROOT = sh.capturef('luaenv root')
   vars.CACHE = vars.LUAENV_ROOT..'/plugins/luaenv-luarocks/.cache'
   sh.ensure(vars.CACHE)
@@ -222,7 +225,7 @@ local function main(...)
   if opts.version and not opts.version:match('^%d+%.%d+.*') then
     return usage()
   end
-  setup_environments()
+  setup_environments(opts)
   install(opts.version)
 end
 
