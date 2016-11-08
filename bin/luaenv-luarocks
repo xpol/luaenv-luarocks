@@ -93,12 +93,42 @@ function sh.download(url, path)
   end
 end
 
+
 local vars = {}
+
+-- return a list or known versions, the latert version in front
+local function known_versions()
+  local function hash(t)
+    for _, v in ipairs(t) do
+      t[v] = true
+    end
+    return t
+  end
+  local releases = vars.CACHE..'/releases'
+  sh.download('https://keplerproject.github.io/luarocks/releases', releases)
+  local f = io.open(releases, 'r')
+  if not f then
+    return hash({ '2.4.1', '2.4.0', '2.3.0', '2.2.2', '2.2.1', '2.2.0' })
+  end
+  local s = f:read('*a')
+  f:close()
+  local versions = {}
+
+  for v, major, minor in s:gmatch('"luarocks%-((%d+)%.(%d+)%.?%d*)%.tar%.gz"') do
+    major, minor = tonumber(major), tonumber(minor)
+    -- requires luarocks >= 2.2.0, because we use --with-lua-bin in configure
+    if major == 2 and minor < 2 then break end
+    versions[#versions+1] = v
+  end
+  return hash(versions)
+end
+
 
 local function setup_environments()
   vars.LUAENV_ROOT = sh.capturef('luaenv root')
   vars.CACHE = vars.LUAENV_ROOT..'/plugins/luaenv-luarocks/.cache'
   sh.ensure(vars.CACHE)
+  vars.VERSIONS = known_versions()
 end
 
 
@@ -144,7 +174,13 @@ local function install(version)
   sh.required_one_of('unzip')
   sh.required_one_of('aria2c', 'curl', 'wget')
 
-  version = version or "2.4.1"
+  version = version or vars.VERSIONS[1]
+  if not vars.VERSIONS[version] then
+    p('Unknown version: %s', version)
+    p('Known versions are: ')
+    p(table.concat(vars.VERSIONS, '\n'))
+    os.exit(1)
+  end
 
   local PREFIX = vars.LUAENV_ROOT..'/versions/'..sh.capturef('luaenv version-name')
   local INC = sh.capturef('find %s/include -name lua.h', PREFIX):gsub('/lua%.h$', '')
@@ -189,6 +225,7 @@ end
 
 
 local function main(...)
+  print('args:', ...)
   local opts = parse_arg({...})
   if opts.version and not opts.version:match('^%d+%.%d+.*') then
     return usage()
