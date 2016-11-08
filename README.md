@@ -31,4 +31,4 @@ If no version name specified, the latest known stable release will used.
 
 LuaRocks versions will be installed for current Lua in luaenv.
 
-To see a list of all available Lua versions, run `luaenv luarocks --list`.
+To see a list of all available LuaRocks versions, run `luaenv luarocks --list`.
