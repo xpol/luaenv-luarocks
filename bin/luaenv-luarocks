@@ -206,7 +206,8 @@ end
 
 local function parse_arg(arg)
   local options = {
-    verbose={argc=0}
+    verbose={argc=0},
+    list={argc=0}
   }
 
   local opts = {}
@@ -223,13 +224,20 @@ local function parse_arg(arg)
   return opts
 end
 
+local function show_versions()
+  p(table.concat(vars.VERSIONS, '\n'))
+end
 
 local function main(...)
   local opts = parse_arg({...})
   if opts.version and not opts.version:match('^%d+%.%d+.*') then
     return usage()
   end
+
   setup_environments(opts)
+  if opts.list then
+    return show_versions()
+  end
   install(opts.version)
 end
 
