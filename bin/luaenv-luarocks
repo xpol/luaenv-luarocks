@@ -68,17 +68,21 @@ end
 
 
 function sh.download(url, path)
+  local ok, cmd
+  p('downloading %s...', url)
   if sh.has_command('aria2c') then
     local d, f = path:match('^(.-)/([^/]+)$')
-    return sh.execf('aria2c -q -d "%s" -o "%s" --conditional-get=true --allow-overwrite "%s"', d, f, url)
+    ok = sh.execf('aria2c -q -d "%s" -o "%s" --conditional-get=true --allow-overwrite "%s"', d, f, url)
   elseif sh.has_command('curl') then
-    return sh.execf('curl -qsS -L -z "%s" -o "%s" "%s"', path, path, url)
+    ok = sh.execf('curl -qsS -L -z "%s" -o "%s" "%s"', path, path, url)
   elseif sh.has_command('wget') then
-    return sh.execf('wget -nv --timestamping -O "%s" "%s"', path, url)
+    ok = sh.execf('wget -nv --timestamping -O "%s" "%s"', path, url)
   else
     p('error: please install `aria2c` or `curl` or `wget` and try again')
     os.exit(1)
   end
+  p('result: %s', ok)
+  return ok
 end
 
 
@@ -213,7 +217,6 @@ end
 
 
 local function main(...)
-  print('args:', ...)
   local opts = parse_arg({...})
   if opts.version and not opts.version:match('^%d+%.%d+.*') then
     return usage()
