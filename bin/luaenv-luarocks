@@ -128,7 +128,9 @@ local function setup_environments(opts)
   vars.LUAENV_ROOT = sh.capturef('luaenv root')
   vars.CACHE = vars.LUAENV_ROOT..'/plugins/luaenv-luarocks/.cache'
   sh.ensure(vars.CACHE)
-  vars.VERSIONS = known_versions()
+  if not opts.uninstall then
+    vars.VERSIONS = known_versions()
+  end
 end
 
 
@@ -150,6 +152,10 @@ end
 
 local function source_dir_for_version(version)
   return ('%s/luarocks-%s'):format(vars.CACHE, version)
+end
+
+local function luaroot()
+  return vars.LUAENV_ROOT..'/versions/'..sh.capturef('luaenv version-name')
 end
 
 local function fetch_release(version)
@@ -182,7 +188,7 @@ local function install(version)
     os.exit(1)
   end
 
-  local PREFIX = vars.LUAENV_ROOT..'/versions/'..sh.capturef('luaenv version-name')
+  local PREFIX = luaroot()
   local INC = sh.capturef('find %s/include -name lua.h', PREFIX):gsub('/lua%.h$', '')
   local BIN = PREFIX..'/bin'
 
@@ -203,11 +209,18 @@ local function install(version)
   sh.rmrf(source_dir_for_version(version))
 end
 
+local function uninstall()
+  local PREFIX = luaroot()
+  sh.execf('luarocks remove luarocks')
+  sh.rmrf(PREFIX..'/share/lua/5.1/luarocks')
+  sh.rmrf(PREFIX..'/etc/luarocks')
+end
 
 local function parse_arg(arg)
   local options = {
     verbose={argc=0},
-    list={argc=0}
+    list={argc=0},
+    uninstall={argc=0}
   }
 
   local opts = {}
@@ -237,6 +250,8 @@ local function main(...)
   setup_environments(opts)
   if opts.list then
     return show_versions()
+  elseif opts.uninstall then
+    return uninstall()
   end
   install(opts.version)
 end

@@ -31,4 +31,6 @@ If no version name specified, the latest known stable release will used.
 
 LuaRocks versions will be installed for current Lua in luaenv.
 
+To remove LuaRocks (installed rocks are kept), run `luaenv luarocks --uninstall`.
+
 To see a list of all available LuaRocks versions, run `luaenv luarocks --list`.
