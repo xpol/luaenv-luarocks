@@ -103,23 +103,8 @@ local function known_versions()
     end
     return t
   end
-  local releases = vars.CACHE..'/releases'
-  sh.download('https://keplerproject.github.io/luarocks/releases/index.html', releases)
-  local f = io.open(releases, 'r')
-  if not f then
-    return hash({ '2.4.1', '2.4.0', '2.3.0', '2.2.2', '2.2.1', '2.2.0' })
-  end
-  local s = f:read('*a')
-  f:close()
-  local versions = {}
 
-  for v, major, minor in s:gmatch('"luarocks%-((%d+)%.(%d+)%.?%d*)%.tar%.gz"') do
-    major, minor = tonumber(major), tonumber(minor)
-    -- requires luarocks >= 2.2.0, because we use --with-lua-bin in configure
-    if major == 2 and minor < 2 then break end
-    versions[#versions+1] = v
-  end
-  return hash(versions)
+  return hash({ '2.4.3', '2.4.3', '2.4.1', '2.4.0', '2.3.0', '2.2.2', '2.2.1', '2.2.0' })
 end
 
 
@@ -147,7 +132,7 @@ Install specified version of LuaRocks for your Lua installtion in luaenv.
 end
 
 local function tarball_url_for_version(version)
-  return ('https://keplerproject.github.io/luarocks/releases/luarocks-%s.tar.gz'):format(version)
+  return ('https://github.com/luarocks/luarocks/archive/v%s.tar.gz'):format(version)
 end
 
 local function source_dir_for_version(version)
