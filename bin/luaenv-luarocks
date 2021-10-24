@@ -139,7 +139,7 @@ Install specified version of LuaRocks for your Lua installtion in luaenv.
 end
 
 local function tarball_url_for_version(version)
-  return ('https://github.com/luarocks/luarocks/archive/v%s.tar.gz'):format(version)
+  return ('https://luarocks.github.io/luarocks/releases/luarocks-%s.tar.gz'):format(version)
 end
 
 local function source_dir_for_version(version)
